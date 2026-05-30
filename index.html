@@ -246,6 +246,14 @@
                     <button onclick="aggiungiNuovoBambino()" style="background-color: #ff9800; width: 100%;">Registra nel Cloud</button>
                     <p id="messaggioSuccessoIscrizione" class="success-message" style="color: #e65100;">Registrato online!</p>
                     <p id="erroreIscrizione" class="error-message">Compila tutti i campi o codice già esistente.</p>
+                    <!-- NUOVA SEZIONE ELIMINA -->
+<hr style="border: 1px dashed #ddd; margin: 20px 0;">
+<h4 style="margin-top:0; color:#d32f2f;">Elimina Iscrizione</h4>
+<p style="font-size: 13px; color: #555; text-align: left; margin-bottom: 5px;">Inserisci il codice del bambino che vuoi rimuovere permanentemente:</p>
+<input type="text" id="codiceDaEliminare" placeholder="Es. MARIO2026">
+<button onclick="eliminaBambino()" style="background-color: #d32f2f; width: 100%;">Elimina permanentemente dal Cloud</button>
+<p id="messaggioSuccessoEliminazione" class="success-message" style="color: #d32f2f;">Bambino rimosso con successo dal cloud.</p>
+<p id="erroreEliminazione" class="error-message">Codice non trovato. Controlla che sia scritto correttamente.</p>
                 </div>
             </div>
             
@@ -381,6 +389,36 @@
                     cambiaTabMaestra('diario');
                 }, 1500);
             });
+        }
+        // --- CANCELLA DAL CLOUD ---
+        function eliminaBambino() {
+            const codice = document.getElementById("codiceDaEliminare").value.trim().toUpperCase();
+            
+            // Verifichiamo se il codice esiste nel nostro database locale prima di tentare la cancellazione
+            if (codice === "" || !databaseLocale[codice]) {
+                document.getElementById("erroreEliminazione").style.display = "block";
+                document.getElementById("messaggioSuccessoEliminazione").style.display = "none";
+                return;
+            }
+
+            // Chiediamo una conferma di sicurezza per evitare errori distratti
+            const conferma = confirm(`Sei sicura di voler eliminare definitivamente ${databaseLocale[codice].nome} e tutto il suo diario?`);
+            
+            if (conferma) {
+                // Il comando .remove() dice a Firebase di cancellare quel codice
+                db.ref("bambini/" + codice).remove().then(() => {
+                    document.getElementById("codiceDaEliminare").value = "";
+                    document.getElementById("erroreEliminazione").style.display = "none";
+                    
+                    const msg = document.getElementById("messaggioSuccessoEliminazione");
+                    msg.style.display = "block";
+                    
+                    setTimeout(() => { 
+                        msg.style.display = "none";
+                        cambiaTabMaestra('diario');
+                    }, 2000);
+                });
+            }
         }
 
         function caricaDatiInForm() {
