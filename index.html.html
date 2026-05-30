@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asilo Nido - Portale Cloud Pro Corretto</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f7f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 550px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #2c6e49;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .role-selector {
+            margin-bottom: 20px;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .role-btn {
+            background-color: #2c6e49;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type="text"], input[type="password"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        .card {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            text-align: left;
+            border-left: 5px solid #4caf50;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            background: #eee;
+            border-radius: 8px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .tab-btn.active-tab {
+            background-color: #0288d1;
+            color: white;
+            border-radius: 6px;
+        }
+
+        .error-message {
+            color: red;
+            display: none;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: green;
+            display: none;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .signature {
+            font-size: 12px;
+            color: #777;
+            font-style: italic;
+            margin-top: 15px;
+            border-top: 1px dashed #ccc;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🧸 Asilo Nido - Diario Cloud</h1>
+        
+        <!-- Menu di selezione iniziale -->
+        <div class="role-selector" id="menu-ruolo">
+            <p>Chi sei?</p>
+            <button class="role-btn" onclick="mostraSezione('login-genitore')">Sono un Genitore</button>
+            <button class="role-btn" onclick="mostraSezione('login-maestra')" style="background-color: #0288d1;">Sono una Maestra</button>
+        </div>
+
+        <!-- 1. SEZIONE GENITORE: Login -->
+        <div id="login-genitore" class="section">
+            <h3>Accesso Genitori</h3>
+            <p>Inserisci il tuo codice personale:</p>
+            <input type="text" id="codiceInput" placeholder="Es. LUCA123">
+            <button onclick="controllaCodice()">Accedi</button>
+            <p id="erroreGenitore" class="error-message">Codice errato o nessun dato presente. Riprova.</p>
+            <br><br>
+            <button onclick="tornaAlMenu()" style="background-color: #757575; font-size: 12px;">Indietro</button>
+        </div>
+
+        <!-- 2. SEZIONE GENITORE: Visualizzazione Dati -->
+        <div id="scheda-bambino" class="section card">
+            <h2 id="nomeBambino">Nome Bambino</h2>
+            <p><strong>Pasto:</strong> <span id="pastoBambino"></span></p>
+            <p><strong>Nanna:</strong> <span id="nannaBambino"></span></p>
+            <p><strong>Attività:</strong> <span id="attivitaBambino"></span></p>
+            <p><strong>Note della maestra:</strong> <span id="noteBambino"></span></p>
+            <div id="firmaFirma" class="signature"></div>
+            <br>
+            <button onclick="logoutGenitore()" style="background-color: #757575;">Esci</button>
+        </div>
+
+        <!-- 2B. LOGIN MAESTRE -->
+        <div id="login-maestra" class="section">
+            <h3>Area Riservata Personale</h3>
+            <p>Inserisci la password dell'Asilo:</p>
+            <input type="password" id="passwordMaestraInput" placeholder="Password Maestre">
+            <button onclick="autenticaMaestra()" style="background-color: #0288d1;">Entra nel Pannello</button>
+            <p id="erroreMaestra" class="error-message">Password errata. Accesso negato.</p>
+            <br><br>
+            <button onclick="tornaAlMenu()" style="background-color: #757575; font-size: 12px;">Indietro</button>
+        </div>
+
+        <!-- 3. SEZIONE MAESTRA: Pannello di Controllo -->
+        <div id="area-maestra" class="section">
+            <h3>Pannello di Controllo Maestre</h3>
+            
+            <div class="tabs">
+                <button id="btn-tab-diario" class="tab-btn active-tab" onclick="cambiaTabMaestra('diario')">Compila Diario</button>
+                <button id="btn-tab-iscrivi" class="tab-btn" onclick="cambiaTabMaestra('iscrivi')">Iscrivi Bambino</button>
+            </div>
+
+            <!-- TAB A: COMPILA DIARIO -->
+            <div id="tab-diario">
+                <label for="firmaMaestra"><strong>Il tuo Nome (Firma):</strong></label>
+                <input type="text" id="firmaMaestra" placeholder="Es. Maestra Silvia, Maestra Anna...">
+
+                <label for="selezionaBambino"><strong>Scegli il Bambino:</strong></label>
+                <select id="selezionaBambino" onchange="caricaDatiInForm()">
+                    <option>Caricamento in corso...</option>
+                </select>
+
+                <div class="card" style="border-left-color: #0288d1;">
+                    <label><strong>Pasto:</strong></label>
+                    <input type="text" id="formPasto" placeholder="Cosa ha mangiato?">
+
+                    <label><strong>Nanna:</strong></label>
+                    <input type="text" id="formNanna" placeholder="Quanto ha dormito?">
+
+                    <label><strong>Attività svolte:</strong></label>
+                    <input type="text" id="formAttivita" placeholder="Cosa ha fatto oggi?">
+
+                    <label><strong>Note:</strong></label>
+                    <textarea id="formNote" placeholder="Note aggiuntive..."></textarea>
+                    
+                    <button onclick="salvaDatiMaestra()" style="background-color: #0288d1; width: 100%;">Salva Diario Online</button>
+                    <p id="messaggioSuccesso" class="success-message">Diario salvato nel cloud!</p>
+                    <p id="erroreFirma" class="error-message">Devi inserire il tuo nome prima di salvare!</p>
+                </div>
+            </div>
+
+            <!-- TAB B: ISCRIVI NUOVO BAMBINO -->
+            <div id="tab-iscrivi" style="display: none;">
+                <div class="card" style="border-left-color: #ff9800;">
+                    <h4 style="margin-top:0; color:#e65100;">Nuova Iscrizione</h4>
+                    <label><strong>Nome e Cognome del Bambino:</strong></label>
+                    <input type="text" id="nuovoNome" placeholder="Es. Mario Rossi">
+
+                    <label><strong>Codice di Accesso Unico per il Genitore:</strong></label>
+                    <input type="text" id="nuovoCodice" placeholder="Es. MARIO2026">
+
+                    <button onclick="aggiungiNuovoBambino()" style="background-color: #ff9800; width: 100%;">Registra nel Cloud</button>
+                    <p id="messaggioSuccessoIscrizione" class="success-message" style="color: #e65100;">Registrato online!</p>
+                    <p id="erroreIscrizione" class="error-message">Compila tutti i campi o codice già esistente.</p>
+                </div>
+            </div>
+            
+            <br>
+            <button onclick="tornaAlMenu()" style="background-color: #757575; font-size: 12px;">Esci dall'area maestre</button>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚠️ INSERISCI QUI LA TUA CONFIGURAZIONE FIREBASE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBD5YLG_vV6qH2IERLebMzTL1wYWOfPH4",
+            authDomain: "asilodiario.firebaseapp.com",
+            databaseURL: "https://asilodiario-default-rtdb.firebaseio.com",
+            projectId: "asilodiario",
+            storageBucket: "asilodiario.firebasestorage.app",
+            messagingSenderId: "1029716408388",
+            appId: "1:1029716408388:web:9306d089fb5ed433cf6411"
+        };
+        // ==========================================
+
+        const PASSWORD_MAESTRE = "MAESTRA2026";
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let databaseLocale = {};
+
+        // Sincronizzazione continua in background
+        db.ref("bambini").on("value", (snapshot) => {
+            databaseLocale = snapshot.val() || {};
+            // Se la maestra è già dentro lo schermo del pannello, aggiorna la lista al volo
+            if(document.getElementById("area-maestra").classList.contains("active")) {
+                aggiornaMenuTendinaBambini();
+            }
+        });
+
+        function autenticaMaestra() {
+            const passInserita = document.getElementById("passwordMaestraInput").value;
+            if(passInserita === PASSWORD_MAESTRE) {
+                document.getElementById("erroreMaestra").style.display = "none";
+                document.getElementById("passwordMaestraInput").value = "";
+                
+                // Mostra il pannello maestre
+                mostraSezione('area-maestra');
+            } else {
+                document.getElementById("erroreMaestra").style.display = "block";
+            }
+        }
+
+        function aggiornaMenuTendinaBambini() {
+            const select = document.getElementById("selezionaBambino");
+            select.innerHTML = "";
+            
+            if (Object.keys(databaseLocale).length === 0) {
+                select.innerHTML = "<option value=''>Nessun bambino registrato nel database</option>";
+                return;
+            }
+            
+            for (let codice in databaseLocale) {
+                let opzione = document.createElement("option");
+                opzione.value = codice;
+                opzione.innerText = databaseLocale[codice].nome + " (Codice: " + codice + ")";
+                select.appendChild(opzione);
+            }
+            
+            // Forza il form a caricare i testi del primo bambino della lista
+            caricaDatiInForm();
+        }
+
+        function mostraSezione(idSezione) {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById('menu-ruolo').style.display = 'none';
+            document.getElementById(idSezione).classList.add('active');
+
+            if(idSezione === 'area-maestra') {
+                // Prima di tutto aggiorna i dati locali attingendo da Firebase
+                db.ref("bambini").once("value").then((snapshot) => {
+                    databaseLocale = snapshot.val() || {};
+                    aggiornaMenuTendinaBambini();
+                    cambiaTabMaestra('diario');
+                });
+            }
+        }
+
+        function cambiaTabMaestra(tipo) {
+            if(tipo === 'diario') {
+                document.getElementById('tab-diario').style.display = 'block';
+                document.getElementById('tab-iscrivi').style.display = 'none';
+                document.getElementById('btn-tab-diario').classList.add('active-tab');
+                document.getElementById('btn-tab-iscrivi').classList.remove('active-tab');
+            } else {
+                document.getElementById('tab-diario').style.display = 'none';
+                document.getElementById('tab-iscrivi').style.display = 'block';
+                document.getElementById('btn-tab-diario').classList.remove('active-tab');
+                document.getElementById('btn-tab-iscrivi').classList.add('active-tab');
+            }
+        }
+
+        function tornaAlMenu() {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById('menu-ruolo').style.display = 'block';
+            document.getElementById('erroreGenitore').style.display = 'none';
+            document.getElementById('erroreMaestra').style.display = 'none';
+        }
+
+        function aggiungiNuovoBambino() {
+            const nome = document.getElementById("nuovoNome").value.trim();
+            const codice = document.getElementById("nuovoCodice").value.trim().toUpperCase();
+
+            if (nome === "" || codice === "" || databaseLocale[codice]) {
+                document.getElementById("erroreIscrizione").style.display = "block";
+                return;
+            }
+
+            db.ref("bambini/" + codice).set({
+                nome: nome,
+                pasto: "Non ancora inserito",
+                nanna: "Non ancora inserito",
+                attivita: "Non ancora inserito",
+                note: "Nessuna nota per oggi.",
+                ultimaModifica: "Nessuna"
+            }).then(() => {
+                document.getElementById("nuovoNome").value = "";
+                document.getElementById("nuovoCodice").value = "";
+                document.getElementById("erroreIscrizione").style.display = "none";
+                const msg = document.getElementById("messaggioSuccessoIscrizione");
+                msg.style.display = "block";
+                setTimeout(() => { 
+                    msg.style.display = "none";
+                    cambiaTabMaestra('diario');
+                }, 1500);
+            });
+        }
+
+        function caricaDatiInForm() {
+            const codiceBambino = document.getElementById("selezionaBambino").value;
+            if(!codiceBambino || !databaseLocale[codiceBambino]) {
+                // Svuota i moduli se non c'è nessun bambino selezionato
+                document.getElementById("formPasto").value = "";
+                document.getElementById("formNanna").value = "";
+                document.getElementById("formAttivita").value = "";
+                document.getElementById("formNote").value = "";
+                return;
+            }
+            
+            const bimbo = databaseLocale[codiceBambino];
+            document.getElementById("formPasto").value = bimbo.pasto || "";
+            document.getElementById("formNanna").value = bimbo.nanna || "";
+            document.getElementById("formAttivita").value = bimbo.attivita || "";
+            document.getElementById("formNote").value = bimbo.note || "";
+            document.getElementById("messaggioSuccesso").style.display = "none";
+            document.getElementById("erroreFirma").style.display = "none";
+        }
+
+        function salvaDatiMaestra() {
+            const codiceBambino = document.getElementById("selezionaBambino").value;
+            const firma = document.getElementById("firmaMaestra").value.trim();
+            if(!codiceBambino || codiceBambino === "") return;
+
+            if(firma === "") {
+                document.getElementById("erroreFirma").style.display = "block";
+                return;
+            }
+
+            const oraAttuale = new Date().toLocaleString('it-IT', { hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit' });
+            const testoFirma = `Compilato da: ${firma} il ${oraAttuale}`;
+
+            db.ref("bambini/" + codiceBambino).update({
+                pasto: document.getElementById("formPasto").value,
+                nanna: document.getElementById("formNanna").value,
+                attivita: document.getElementById("formAttivita").value,
+                note: document.getElementById("formNote").value,
+                ultimaModifica: testoFirma
+            }).then(() => {
+                document.getElementById("erroreFirma").style.display = "none";
+                const msg = document.getElementById("messaggioSuccesso");
+                msg.style.display = "block";
+                setTimeout(() => { msg.style.display = "none"; }, 2000);
+            });
+        }
+
+        function controllaCodice() {
+            const codice = document.getElementById("codiceInput").value.trim().toUpperCase();
+
+            if (databaseLocale[codice]) {
+                const bimbo = databaseLocale[codice];
+                document.getElementById("nomeBambino").innerText = bimbo.nome;
+                document.getElementById("pastoBambino").innerText = bimbo.pasto;
+                document.getElementById("nannaBambino").innerText = bimbo.nanna;
+                document.getElementById("attivitaBambino").innerText = bimbo.attivita;
+                document.getElementById("noteBambino").innerText = bimbo.note;
+                
+                if(bimbo.ultimaModifica) {
+                    document.getElementById("firmaFirma").innerText = bimbo.ultimaModifica;
+                } else {
+                    document.getElementById("firmaFirma").innerText = "";
+                }
+
+                document.getElementById("login-genitore").classList.remove('active');
+                document.getElementById("scheda-bambino").classList.add('active');
+            } else {
+                document.getElementById("erroreGenitore").style.display = "block";
+            }
+        }
+
+        function logoutGenitore() {
+            document.getElementById("codiceInput").value = "";
+            document.getElementById("scheda-bambino").classList.remove('active');
+            document.getElementById("menu-ruolo").style.display = 'block';
+        }
+    </script>
+</body>
+</html>
